@@ -1,0 +1,3 @@
+../dut_src/af_up_dn_counter.vhdl
+tb_af_up_dn_counter.e.vhdl
+tb_af_up_dn_counter.a.vhdl
