@@ -44,7 +44,7 @@ begin
  
   u_af_sim_wdog : entity work.af_sim_wdog
     port map (
-      i_rst_n 	 => i_rst_n,
+      i_rst_n 	 => osvvm_rst_n,
       i_test_done 	 => test_done);
 
   ------------------------------------------------------------
