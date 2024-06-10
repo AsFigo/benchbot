@@ -1,10 +1,15 @@
 import yaml
+from token_test import *
 import os
 import argparse
+import pprint
+import os.path
 
 verbose = True
 def afParseArgs():
     afPsr = argparse.ArgumentParser()
+    afPsr.add_argument('-i', '--input', 
+        help='Input VHDL file', required=True)
     afPsr.add_argument('-y', '--yaml', 
         help='Input YAML file', required=True)
     afPsr.add_argument('--osvvm', action='store_true', 
@@ -12,18 +17,49 @@ def afParseArgs():
 
     return afPsr.parse_args()
 
+class afPortInfoC():
+  pName : str
+  pDir : str
+  pType : str
+  pWidth : int
+  def __init__(self, pName, pDir, pType, pWidth):
+    self.pName = pName
+    self.pDir = pDir
+    self.pType = pType
+    self.pWidth = pWidth
+
+  def __str__(self):
+    return f"{self.pName}, {self.pDir}, {self.pType}, {self.pWidth}"
+  def __repr__(self):
+    return str(self)
+
 afPortsGlbL = []
 
-def afDeclareDutPorts(lvPortsInfoD):
-  lvPortsInfoL = lvPortsInfoD['ports']
+def afExtractPortsInfo(lvMdl):
+  global afPortsGlbL
+
+  for iPort in lvMdl.port:
+    lvCurPName = iPort[0]
+    lvCurPDir = iPort[1]
+    lvCurPType = iPort[2]
+    lvCurPWidth = iPort[3]
+    lvCurPortInfo = afPortInfoC(
+        lvCurPName,
+        lvCurPDir,
+        lvCurPType,
+        lvCurPWidth)
+    afPortsGlbL.append(lvCurPortInfo)
+
+def afDeclareDutPorts():
+  global afPortsGlbL
 
   lvCodeS = "  -- DUT ports declared as local sigals in TB\n"
-  for iPort in lvPortsInfoL:
+  for iPort in afPortsGlbL:
     lvCodeS += "  signal "
-    lvCodeS += iPort['pName'] + " : "
-    lvCodeS += iPort['pType']
-    if (iPort['pWidth'] > 1):
-      lvCodeS += f" ({iPort['pWidth']-1} downto 0)"
+    lvCodeS += iPort.pName + " : "
+    lvCodeS += iPort.pType
+    if (iPort.pWidth > 1):
+      lvCodeS += f" ({iPort.pWidth-1} downto 0)"
     lvCodeS += ";\n"
   lvCodeS += "  -- End of DUT ports declared as local sigals in TB\n"
   return (lvCodeS)
@@ -42,8 +78,8 @@ def afTestcaseEnt():
   lvCodeS += "  -- End of DUT ports declared in testcase\n"
   return (lvCodeS)
 
-def afInstantiateTest(lvPortsInfoD):
-  lvPortsInfoL = lvPortsInfoD['ports']
+def afInstantiateTest():
+  global afPortsGlbL
 
   lvCodeS =  "  -- Generic Test instantiation\n"
   lvCodeS += "  -- DUT specific test code will go in the\n"
@@ -53,11 +89,11 @@ def afInstantiateTest(lvPortsInfoD):
   lvCodeS += "    port map (\n"
   lvCodeS += f"      o_test_done \t => test_done,\n"
   lvPortSeparator = ','
-  for lvIdx, iPort in enumerate(lvPortsInfoL):
-    if lvIdx == len(lvPortsInfoL) - 1:
+  for lvIdx, iPort in enumerate(afPortsGlbL):
+    if lvIdx == len(afPortsGlbL) - 1:
       lvPortSeparator = ''
 
-    lvCurPName = iPort['pName']
+    lvCurPName = iPort.pName
     lvCodeS += f"      {lvCurPName} \t => {lvCurPName}{lvPortSeparator}\n"
   lvCodeS += f"    );\n"
   return (lvCodeS)
@@ -75,17 +111,17 @@ def afAddSimUtil():
   return (lvCodeS)
 
 
-def afInstantiateDUT(lvPortsInfoD):
-  lvPortsInfoL = lvPortsInfoD['ports']
+def afInstantiateDUT():
+  global afPortsGlbL
 
-  lvPortS = "    port map (\n"
   lvNumPorts = 0
+  lvPortS = "    port map (\n"
   lvPortSeparator = ','
-  for lvIdx, iPort in enumerate(lvPortsInfoL):
-    if lvIdx == len(lvPortsInfoL) - 1:
+  for lvIdx, iPort in enumerate(afPortsGlbL):
+    if lvIdx == len(afPortsGlbL) - 1:
       lvPortSeparator = ''
 
-    lvCurPName = iPort['pName']
+    lvCurPName = iPort.pName
     lvPortS += f"      {lvCurPName} \t => {lvCurPName}{lvPortSeparator}\n"
   lvPortS += f"    );\n"
   return (lvPortS)
@@ -124,11 +160,11 @@ def afAddArchTemplate(lvTbName):
   return lvArchTmplS
 
 
-def pyVhGArch(lvPortsInfoD):
-  lvDutName = lvPortsInfoD['entity']
-  lvTbName = 'tb_' + lvDutName
+def pyVhGArch(lvMdl, lvTbName, lvOsvvmEn):
   afTbArchFp = open(f"{lvTbName}.a.vhdl",'w')
-  lvDutPortsDeclS = afDeclareDutPorts(lvPortsInfoD)
+  lvDutName = lvTbName.replace('tb_', '', 1)
+  afExtractPortsInfo(lvMdl)
+  lvDutPortsDeclS = afDeclareDutPorts()
   lvArchS = ""
   lvArchS += afAddArchTemplate(lvTbName)
   lvArchS += lvDutPortsDeclS
@@ -139,11 +175,9 @@ def pyVhGArch(lvPortsInfoD):
   lvArchS += "  -- DUT instantiation\n"
   lvArchS += "  u_" + lvDutName + " : entity work."
   lvArchS += lvDutName + "\n"
-  lvArchS += afInstantiateDUT(lvPortsInfoD)
-  '''
   lvArchS += afHandleGenerics(lvMdl)
-  '''
-  lvArchS += afInstantiateTest(lvPortsInfoD)
+  lvArchS += afInstantiateDUT()
+  lvArchS += afInstantiateTest()
   lvArchS += afAddSimUtil()
   lvArchS += afOsvvmClkGen()
   lvArchS += afOsvvmRstGen()
@@ -191,9 +225,28 @@ def afOsvvmRstGen():
   return lvRstGenS
 
 
-def pyVhGLibHdr(lvPortsInfoD, lvOsvvmEn):
-  lvLibHdrS = lvPortsInfoD['libraries']
-  lvLibHdrS = lvLibHdrS.replace('#', '--')
+def pyVhGLibHdr(lvMdl, lvTbName, lvOsvvmEn):
+  lvLibL = []
+  # generate header
+  for iLib in lvMdl.lib:
+    lvLibL.append(iLib.lower())
+  #remove duplicates from the Library list
+  lvTmpL = [idx for idx, val in enumerate(lvLibL) if val in lvLibL[:idx]]
+ 
+  # excluding duplicate indices from other list
+  lvFinalLibL = [ele for idx, ele in enumerate(lvLibL) if idx not in lvTmpL]
+
+  lvLibHdrS = '-- Generated using Python Parser for VHDL\n\n'
+  for iLib in lvFinalLibL:
+    if "." not in iLib:
+      lvLibHdrS += f"library {iLib};\n"
+    else:
+      lvLibHdrS += f"use {iLib};\n"     
+  if ('numeric_std' not in lvLibHdrS):
+    lvLibHdrS += "use ieee.numeric_std.all;\n"
+  if ('std.textio' not in lvLibHdrS):
+    lvLibHdrS += "use std.textio.all;\n"
+
   if (lvOsvvmEn):
     lvLibHdrS += "-- User enabled --osvvm option \n"
     lvLibHdrS += "-- Adding OSVVM support below \n"
@@ -201,19 +254,18 @@ def pyVhGLibHdr(lvPortsInfoD, lvOsvvmEn):
     lvLibHdrS += "context osvvm.OsvvmContext;\n"
   return (lvLibHdrS)
 
-def pyVhGEnt(lvPortsInfoD):
-  lvTbName = 'tb_' + lvPortsInfoD['entity']
+def pyVhGEnt(lvMdl, lvTbName, lvOsvvmEn):
   afTbEntFp = open(f"{lvTbName}.e.vhdl",'w')
-  lvEntS = pyVhGLibHdr(lvPortsInfoD, True)
+  lvEntS = pyVhGLibHdr(lvMdl, lvTbName, lvOsvvmEn)
   lvEntS += f"\nentity {lvTbName} is\n"
   lvEntS += f"\nend entity {lvTbName};\n"
   afTbEntFp.write(lvEntS)
   afTbEntFp.close()
 
-def afSimUtilEnt():
+def afSimUtilEnt(lvMdl, lvTbName, lvOsvvmEn):
   lvSimEntName = 'af_tb_sim_util'
   afSimEntFp = open(f"{lvSimEntName}.e.vhdl",'w')
-  lvEntS = ''
+  lvEntS = pyVhGLibHdr(lvMdl, lvTbName, lvOsvvmEn)
   lvEntS += f"\nentity {lvSimEntName} is\n"
   lvEntS += f"  port (\n"
   lvEntS += f"    i_rst_n : in std_logic;\n"
@@ -223,7 +275,7 @@ def afSimUtilEnt():
   afSimEntFp.write(lvEntS)
   afSimEntFp.close()
 
-def afSimUtilArch():
+def afSimUtilArch(lvMdl, lvTbName, lvOsvvmEn):
   lvMarkerS = "  ------------------------------------------------------------\n"
   lvSimArchName = 'af_tb_sim_util'
   afSimArchFp = open(f"{lvSimArchName}.a.vhdl",'w')
@@ -263,21 +315,29 @@ def afSimUtilArch():
 def afParseYaml(lvInpYaml):
   lvInpYmlF = open (lvInpYaml, 'r')
   lvPortsInfo = yaml.safe_load(lvInpYmlF)
-  return (lvPortsInfo)
+  print (lvPortsInfo)
+  print (type(lvPortsInfo))
 
 def pyVhG():
   afPsr = afParseArgs()
+  if (not os.path.isfile(afPsr.input)):
+    print ("Input VHDL file not found: ", afPsr.input)
+    print ("Check file name, path and extension")
+    exit(1)
   if (not os.path.isfile(afPsr.yaml)):
     print ("Input YAML file not found: ", afPsr.yaml)
     print ("Check file name, path and extension")
     exit(1)
 
-  lvPortsInfoD = afParseYaml(afPsr.yaml)
+
+  afParseYaml(afPsr.yaml)
   lvOsvvmEn = afPsr.osvvm
-  pyVhGEnt(lvPortsInfoD)
-  pyVhGArch(lvPortsInfoD)
-  afSimUtilEnt()
-  afSimUtilArch()
+  afParsedModel = parse_vhdl(afPsr.input, True)
+  afTbName = f"tb_{afParsedModel.data}"
+  pyVhGEnt(afParsedModel, afTbName, lvOsvvmEn)
+  pyVhGArch(afParsedModel, afTbName, lvOsvvmEn)
+  afSimUtilEnt(afParsedModel, afTbName, lvOsvvmEn)
+  afSimUtilArch(afParsedModel, afTbName, lvOsvvmEn)
 
 
 pyVhG()
