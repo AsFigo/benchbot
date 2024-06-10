@@ -54,13 +54,14 @@ def afExtractPortsInfo(lvMdl):
         lvCurPWidth)
     afPortsGlbL.append(lvCurPortInfo)
 
-def afDumpYaml(lvEntName, lvYmlOpFname):
+def afDumpYaml(lvEntName, lvLibS, lvYmlOpFname):
   global afPortsGlbL
   lvPortInfoD = dict()
   ymlOpFptr = open (lvYmlOpFname, 'w')
   # Convert the list of afPortInfoC instances to a list of dictionaries
   lvPortDictsL = [port.to_dict() for port in afPortsGlbL]  
   lvPortInfoD['entity'] = lvEntName
+  lvPortInfoD['libraries'] = lvLibS
   lvPortInfoD['ports'] = lvPortDictsL
   yaml.dump(lvPortInfoD, ymlOpFptr)
   print ('YAML info is written to file: ', lvYmlOpFname)
@@ -79,7 +80,7 @@ def afHandleGenerics(lvMdl):
   return (lvGenericS)
 
 
-def afpyVhGLibHdr(lvMdl, lvVhFname):
+def afGpinfLibHdr(lvMdl, lvVhFname):
   lvLibL = []
   # generate header
   for iLib in lvMdl.lib:
@@ -118,10 +119,9 @@ def main():
     lvYmlOpFname = afPsr.output
 
   lvEntName = afParsedModel.data
-  afTbName = f"tb_{lvEntName}"
-  afpyVhGLibHdr(afParsedModel, afPsr.input)
+  lvLibS = afGpinfLibHdr(afParsedModel, afPsr.input)
   afExtractPortsInfo(afParsedModel)
-  afDumpYaml(lvEntName, lvYmlOpFname)
+  afDumpYaml(lvEntName, lvLibS, lvYmlOpFname)
 
 if __name__ == "__main__":
   main()
