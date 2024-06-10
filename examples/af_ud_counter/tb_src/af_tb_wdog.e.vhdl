@@ -44,7 +44,8 @@ begin
 
     -- Create yaml reports for scoreboard
     -- osvvm_uart.ScoreboardPkg_Uart.WriteScoreboardYaml(FileName => GetTestName & "_sb_Uart.yml") ;
-    -- EndOfTestReports ;
+    EndOfTestReports ;
+    EndOfTestSummary(ReportAll => TRUE) ; 
     std.env.stop ;
     wait ;
   end process ControlProc ;
