@@ -35,6 +35,7 @@ class afPortInfoC():
       'pDir': self.pDir,
       'pName': self.pName,
       'pType': self.pType,
+      'pKind': "ctrlData",
       'pWidth': self.pWidth
     }
 afPortsGlbL = []
@@ -54,12 +55,28 @@ def afExtractPortsInfo(lvMdl):
         lvCurPWidth)
     afPortsGlbL.append(lvCurPortInfo)
 
+def afClassifyPort(lvPortDictsL):
+  lvModPortL = list()
+  for lvPort in lvPortDictsL:
+    lvPname = lvPort['pName'].strip()
+    if ('clock' in lvPname):
+      lvPort['pKind'] = "clk"
+    if ('clk' in lvPname):
+      lvPort['pKind'] = "clk"
+    if ('reset' in lvPname):
+      lvPort['pKind'] = "rst"
+    if ('rst_n' in lvPname):
+      lvPort['pKind'] = "rst"
+    lvModPortL.append(lvPort)
+  return (lvModPortL)
+ 
 def afDumpYaml(lvEntName, lvLibS, lvYmlOpFname):
   global afPortsGlbL
   lvPortInfoD = dict()
   ymlOpFptr = open (lvYmlOpFname, 'w')
   # Convert the list of afPortInfoC instances to a list of dictionaries
-  lvPortDictsL = [port.to_dict() for port in afPortsGlbL]  
+  lvPortTmpL = [port.to_dict() for port in afPortsGlbL]  
+  lvPortDictsL = afClassifyPort(lvPortTmpL)
   lvPortInfoD['entity'] = lvEntName
   lvPortInfoD['libraries'] = lvLibS
   lvPortInfoD['ports'] = lvPortDictsL
