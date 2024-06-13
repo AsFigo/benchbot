@@ -1,0 +1,36 @@
+dutFlist: ../dut_src/dut.f
+entity: af_up_dn_counter
+libraries: '# DUT file: ../examples/af_ud_counter/dut_src/af_up_dn_counter.vhdl
+
+  library ieee;
+
+  use ieee.std_logic_1164.all;
+
+  use ieee.std_logic_unsigned.all;
+
+  use ieee.numeric_std.all;
+
+  use std.textio.all;
+
+  '
+ports:
+- pDir: in
+  pKind: clk
+  pName: i_clk
+  pType: std_logic
+  pWidth: 1
+- pDir: in
+  pKind: rst
+  pName: i_rst_n
+  pType: std_logic
+  pWidth: 1
+- pDir: in
+  pKind: port
+  pName: i_up_or_down
+  pType: std_logic
+  pWidth: 1
+- pDir: out
+  pKind: port
+  pName: o_count
+  pType: std_logic_vector
+  pWidth: 8

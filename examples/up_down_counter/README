@@ -1,0 +1,3 @@
+Testbench files with OSVVM support are cretaed in this directory
+Basic Modelsim run flow is enabled inside sim_dir
+To run Modelsim with generated TB and DUT: cd sim_dir; make mti
