@@ -1,0 +1,9 @@
+../testcase.e.vhdl
+../af_sim_util.e.vhdl
+../af_sim_util.a.vhdl
+../af_up_dn_counter_fcov.e.vhdl
+../af_up_dn_counter_fcov.a.vhdl
+../tb_af_up_dn_counter.e.vhdl
+../tb_af_up_dn_counter.a.vhdl
+../directed_test.a.vhdl
+../directed_test.a.vhdl

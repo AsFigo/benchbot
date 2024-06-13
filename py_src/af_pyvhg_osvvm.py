@@ -27,14 +27,19 @@ def afDeclareDutPorts(lvPortsInfoD):
 
 def afCreateSimDir(lvPortsInfoD):
   lvSimDirName = 'sim_dir'
+  os.makedirs(lvSimDirName, exist_ok=True)
+  afCreateTbFlist(lvPortsInfoD)
+  afCreateTbMake(lvPortsInfoD)
+  afAddMTISupport(lvPortsInfoD)
+
+def afCreateTbFlist(lvPortsInfoD):
+  lvSimDirName = 'sim_dir'
   lvTbName = 'tb_' + lvPortsInfoD['entity']
   lvTbEntFName = '../' + lvTbName + '.e.vhdl'
   lvTbArchFName = '../' + lvTbName + '.a.vhdl'
   lvFcovName = lvPortsInfoD['entity'] + '_fcov'
   lvFcovEntFName = '../' + lvFcovName + '.e.vhdl'
   lvFcovArchFName = '../' + lvFcovName + '.a.vhdl'
-
-  os.makedirs(lvSimDirName, exist_ok=True)
   lvTbFlistName = lvSimDirName + '/tb.f'
   lvTbFlistPtr = open (lvTbFlistName, 'w')
   lvTbFlistPtr.write('../testcase.e.vhdl\n')
@@ -47,6 +52,46 @@ def afCreateSimDir(lvPortsInfoD):
   lvTbFlistPtr.write('../directed_test.a.vhdl\n')
   lvTbFlistPtr.write('../directed_test.a.vhdl\n')
   lvTbFlistPtr.close()
+
+def afAddMTISupport(lvPortsInfoD):
+  lvMtiFName = 'sim_dir/modelsim.ini'
+  lvMtiFPtr = open (lvMtiFName, 'w')
+  if (not 'OSVVM_LIB_MTI' in os.environ):
+    print ('Env variable: OSVVM_LIB_MTI is not set, exiting..')
+    exit(1)
+
+  lvOsvvmLibPath = os.environ.get('OSVVM_LIB_MTI')
+  if (not os.path.isdir(lvOsvvmLibPath)):
+    print ('Env variable: OSVVM_LIB_MTI is set to: ', lvOsvvmLibPath)
+    print ('But that path is NOT a directory - set it to MTI OSVMM compiled directory and rerun')
+    exit(1)
+
+  lvMtiFPtr.write('[Library]\n')
+  lvMtiFPtr.write('others = $MODEL_TECH/../modelsim.ini\n')
+  lvMtiFPtr.write(f'osvvm = {lvOsvvmLibPath}\n')
+  lvMtiFPtr.close()
+
+  lvTbRdMeFPtr = open ('README', 'w')
+  lvTbRdMeFPtr.write('Testbench files with OSVVM support are cretaed in this directory\n')
+  lvTbRdMeFPtr.write('Basic Modelsim run flow is enabled inside sim_dir\n')
+  lvTbRdMeFPtr.write('To run Modelsim with generated TB and DUT: cd sim_dir; make mti\n')
+  lvTbRdMeFPtr.close()
+
+def afCreateTbMake(lvPortsInfoD):
+  lvMkFName = 'sim_dir/Makefile'
+  lvTbMkFPtr = open (lvMkFName, 'w')
+
+  lvDutFl = lvPortsInfoD['dutFlist']
+  lvTbMkFPtr.write('clean:\n')
+  lvTbMkFPtr.write('\trm -fr work *.log *.wlf *.asdb compile* *.yml\n')
+  lvTbMkFPtr.write('mti: clean\n')
+  lvTbMkFPtr.write('\tvlib work\n')
+  lvTbMkFPtr.write(f'\tvcom -2008 -f {lvDutFl} -f tb.f -l af_sim_comp.log\n')
+  lvTbName = 'tb_' + lvPortsInfoD['entity']
+  lvTbMkFPtr.write('\tvsim -c ')
+  lvTbMkFPtr.write(lvTbName)
+  lvTbMkFPtr.write(' -do \"run -all;exit\" -l af_sim_run.log\n')
+  lvTbMkFPtr.close()
 
 
 def afTestcaseEnt(lvPortsInfoD):
