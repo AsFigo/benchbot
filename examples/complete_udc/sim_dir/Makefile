@@ -1,7 +1,7 @@
 all: clean comp run
 
 clean:
-	rm -fr work* *.log transc* *.wlf
+	rm -fr work* *.log transc* *.wlf *.yml
 
 comp:
 	vlib work
