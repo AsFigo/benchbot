@@ -37,19 +37,6 @@ Python 3.x
 Modelsim - 2020.1 or later
 OSVVM recent release
 
-Refer to OSVVM documentation to compile OSVVM library if you need further assistance.
-This Python app enables fast compilation and simulation by levearging on 
-precompiled OSVVM libraries. Hence, it expects a pointer to the precompiled
-OSVVM library as an environment variable: OSVVM_LIB_MTI
-
-In UNIX/WSL, under CSH/TCSH set this as:
-
-setenv OSVVM_LIB_MTI /home/ajeetha/proj/VHDL/OSVVM/git_osvvm/sim_dir/VHDL_LIBS/ModelSim-2020.02/osvvm
-
-In case of BASH/KSH/ZSH:
-export OSVVM_LIB_MTI=/home/ajeetha/proj/VHDL/OSVVM/git_osvvm/sim_dir/VHDL_LIBS/ModelSim-2020.02/osvvm
-
-
 ## Use Model
 
 
