@@ -53,7 +53,48 @@ def afCreateTbFlist(lvPortsInfoD):
   lvTbFlistPtr.write('../directed_test.a.vhdl\n')
   lvTbFlistPtr.close()
 
+def afCreateOsvvmFlist():
+  lvPyBaseDir = os.path.dirname(__file__)
+  lvOsvvmSrcRel = lvPyBaseDir + '/../osvvm/'
+  lvOsvvmSrc =  os.path.realpath(lvOsvvmSrcRel)
+  lvOsvmSrcFilesL = list()
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/OsvvmScriptSettingsPkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/TextUtilPkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/ResolutionPkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/NamePkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/OsvvmGlobalPkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/VendorCovApiPkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/TranscriptPkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/AlertLogPkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/NameStorePkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/MessageListPkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/SortListPkg_int.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/RandomBasePkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/RandomPkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/RandomProcedurePkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/CoveragePkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/ResizePkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/ScoreboardGenericPkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/ScoreboardPkg_slv.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/ScoreboardPkg_int.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/ScoreboardPkg_slv_c.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/ScoreboardPkg_int_c.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/MemorySupportPkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/MemoryGenericPkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/MemoryPkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/MemoryPkg_c.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/MemoryPkg_orig_c.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/TbUtilPkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/ReportPkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/OsvvmTypesPkg.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/OsvvmContext.vhd ")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/OsvvmScriptSettingsPkg_generated.vhd")
+  lvOsvmSrcFilesL.append(lvOsvvmSrc + "/OsvvmScriptSettingsPkg_default.vhd")
+  return (lvOsvmSrcFilesL)
+  
 def afAddMTISupport(lvPortsInfoD):
+
+  '''
   lvMtiFName = 'sim_dir/modelsim.ini'
   lvMtiFPtr = open (lvMtiFName, 'w')
   if (not 'OSVVM_LIB_MTI' in os.environ):
@@ -70,6 +111,8 @@ def afAddMTISupport(lvPortsInfoD):
   lvMtiFPtr.write('others = $MODEL_TECH/../modelsim.ini\n')
   lvMtiFPtr.write(f'osvvm = {lvOsvvmLibPath}\n')
   lvMtiFPtr.close()
+  '''
+
 
   lvTbRdMeFPtr = open ('README', 'w')
   lvTbRdMeFPtr.write('Testbench files with OSVVM support are cretaed in this directory\n')
@@ -81,10 +124,19 @@ def afCreateTbMake(lvPortsInfoD):
   lvMkFName = 'sim_dir/Makefile'
   lvTbMkFPtr = open (lvMkFName, 'w')
 
+  lvOsvvmFiles = afCreateOsvvmFlist()
+  lvOsvvmFlistFname = 'sim_dir/af_osvvm.f'
+  lvOsvvmFlistFptr = open (lvOsvvmFlistFname, 'w')
+  for lvFile in lvOsvvmFiles:
+    lvOsvvmFlistFptr.write(lvFile + '\n')
+
   lvDutFl = lvPortsInfoD['dutFlist']
   lvTbMkFPtr.write('clean:\n')
   lvTbMkFPtr.write('\trm -fr work *.log *.wlf *.asdb compile* *.yml\n')
-  lvTbMkFPtr.write('mti: clean\n')
+  lvTbMkFPtr.write('osvvm: \n')
+  lvTbMkFPtr.write('\tvlib osvvm\n')
+  lvTbMkFPtr.write(f'\tvcom -work osvvm -2008 -f lvOsvvmFlistFname -l af_osvvm_comp.log\n')
+  lvTbMkFPtr.write('mti: clean osvvm\n')
   lvTbMkFPtr.write('\tvlib work\n')
   lvTbMkFPtr.write(f'\tvcom -2008 -f {lvDutFl} -f tb.f -l af_sim_comp.log\n')
   lvTbName = 'tb_' + lvPortsInfoD['entity']
